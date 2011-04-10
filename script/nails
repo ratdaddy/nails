@@ -1,0 +1,11 @@
+#!/usr/bin/env node
+
+/**
+ * Nails server runner
+ * 
+ * Copyright (c) 2011 Brian VanLoo
+ */
+
+require.paths.push('./nails', '.');
+
+require('config/boot.js');
