@@ -14,11 +14,22 @@ this.init = function() {
 };
 
 this.addController = function(error, controller) {
-	for (x in controller) {
-		file = controller[x];
-		basename = file.substr(0, file.length - 3);
-		router.controllers[file.substr(0, file.length - 3)] = 
-				router.require('app/controllers/' + file);
+	if (error) {
+		console.log('Error reading controller directory: ' + error.message);
+	}
+	else {
+		for (x in controller) {
+			file = controller[x];
+			basename = file.substr(0, file.indexOf('.'));
+			if (basename.length > 0) {
+				try {
+					router.controllers[basename] = router.require('app/controllers/' + file);
+				}
+				catch (e) {
+					console.log('Error reading controller file: ' + file + ': ' + e.message);
+				}
+			}
+		}
 	}
 };
 
@@ -26,8 +37,9 @@ this.require = function(module) {
 	return require(module);
 };
 
-this.resetRoutes = function() {
+this.reset = function() {
 	this.routes = {};
+	this.controllers = {};
 };
 
 this.match = function(route_path, controller_action) {

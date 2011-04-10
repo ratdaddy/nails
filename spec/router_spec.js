@@ -19,30 +19,59 @@ describe('#init', function() {
 });
 
 describe('#addController', function() {
+	beforeEach(function() {
+		router.reset();
+	});
+	
 	it('should require the controller', function() {
 		spyOn(router, 'require').andReturn({ action: '' });
 		
-		router.addController('', [ 'cont1.js', 'cont2.js' ]);
+		router.addController(null, [ 'cont1.js', 'cont2.js.x', '.foo' ]);
 		
 		expect(router.require.callCount).toEqual(2);
 		expect(router.require.argsForCall[0]).toEqual([ 'app/controllers/cont1.js' ]);
-		expect(router.require.argsForCall[1]).toEqual([ 'app/controllers/cont2.js' ]);
+		expect(router.require.argsForCall[1]).toEqual([ 'app/controllers/cont2.js.x' ]);
 		
 		expect(router.controllers).toEqual({ cont1: { action: '' }, cont2: { action: '' }});
 	});
+	
+	it('should handle syntax errors on read', function() {
+		spyOn(console, 'log');
+		spyOn(router, 'require').andThrow(new Error('Require Error'));
+		
+		router.addController(null, [ 'cont.js' ]);
+		
+		expect(console.log.mostRecentCall.args[0]).toContain('cont.js');
+		expect(console.log.mostRecentCall.args[0]).toContain('Require Error');
+		expect(router.controllers).toEqual({});
+	});
+	
+	it('should handle an error passed in from readdir', function() {
+		spyOn(console, 'log');
+		spyOn(router, 'require').andReturn({ action: '' });
+
+		router.addController({ message: 'Test Error' }, [ 'cont.js' ]);
+		
+		expect(console.log.mostRecentCall.args[0]).toContain('Test Error');
+		expect(router.controllers).toEqual({});
+	});
 });
 
-describe('#resetRoutes', function() {
+describe('#reset', function() {
 	it('should reset the routes to an empty hash', function() {
-		router['test route'] = 'test route';
-		router.resetRoutes();
+		router.routes['test route'] = 'test route';
+		router.controllers['test controller'] = 'test controller';
+		
+		router.reset();
+		
 		expect(router.routes).toEqual({});
+		expect(router.controllers).toEqual({});
 	});
 });
 
 describe('#match', function() {
 	beforeEach(function() {
-		router.resetRoutes();
+		router.reset();
 	});
 	
 	it('adds a route', function() {
@@ -54,7 +83,7 @@ describe('#match', function() {
 
 describe('#dispatch', function() {
 	beforeEach(function() {
-		router.resetRoutes();
+		router.reset();
 		router.routes['/url'] = { controller: 'cont', action: 'action' };
 	});
 	
