@@ -87,14 +87,34 @@ describe('#dispatch', function() {
 		router.routes['/url'] = { controller: 'cont', action: 'action' };
 	});
 	
-	it('does nothing if there is no matching url', function() {
-		response = { writeHead: function() {}, end: function() {} };
+	it('does nothing if there is no matching url or static file', function() {
+		response = { writeHead: function() {}, write: function() {}, end: function() {} };
 		spyOn(response, 'writeHead');
+		spyOn(response, 'write');
 		spyOn(response, 'end');
+		spyOn(fs, 'readFile').andCallFake(function(error, callback) {
+			callback({ message: 'Not Found' });
+		});
 		
 		router.dispatch('/bogus', null, response);
 		
 		expect(response.writeHead).toHaveBeenCalledWith(404, { 'Content-Type': 'text/plain' });
+		expect(response.write.mostRecentCall.args[0]).toEqual('Not found: /bogus');
+		expect(response.end).toHaveBeenCalled();
+	});
+	
+	it('gets a static file if no matching url', function() {
+		response = { write: function() {}, end: function() {} };
+		spyOn(response, 'write');
+		spyOn(response, 'end');
+		spyOn(fs, 'readFile').andCallFake(function(error, callback) {
+			callback(null, 'Test Data');
+		});
+
+		router.dispatch('/file.ext', null, response);
+		
+		expect(fs.readFile.mostRecentCall.args[0]).toEqual('public/file.ext');
+		expect(response.write).toHaveBeenCalledWith('Test Data');
 		expect(response.end).toHaveBeenCalled();
 	});
 	

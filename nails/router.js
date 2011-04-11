@@ -51,14 +51,22 @@ function parseController(controller_action) {
 	return { controller: parts[0], action: parts[1] };
 }
 
-this.dispatch = function(url, request, result) {
+this.dispatch = function(url, request, response) {
 	if (url in this.routes) {
 		cont_act = this.routes[url];
-		this.controllers[cont_act.controller][cont_act.action](request, result);
+		this.controllers[cont_act.controller][cont_act.action](request, response);
 	}
 	else {
-		result.writeHead(404, { 'Content-Type': 'text/plain' });
-		result.end();
+		fs.readFile('public' + url, function(error, data) {
+			if (error) {
+				response.writeHead(404, { 'Content-Type': 'text/plain' });
+				response.write('Not found: ' + url);
+			}
+			else {
+				response.write(data);
+			}
+			response.end();
+		});
 	}
 };
 
