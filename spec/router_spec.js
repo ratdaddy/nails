@@ -8,38 +8,43 @@ require.paths.push('./nails');
 require('router');
 
 describe('#init', function() {
-	it('should read the directory of cotnrollers', function() {
-		fs = require('fs');
-		spyOn(fs, 'readdir');
+	it ('should read the directory of controllers', function() {
+		spyOn(router, 'addControllers');
 		
 		router.init();
 		
-		expect(fs.readdir).toHaveBeenCalledWith('app/controllers', router.addController);
+		expect(router.addControllers).toHaveBeenCalled();
 	});
 });
 
-describe('#addController', function() {
+describe('#addControllers', function() {
 	beforeEach(function() {
 		router.reset();
 	});
 	
 	it('should require the controller', function() {
+		spyOn(fs, 'readdirSync').andReturn([ 'cont1.js', 'cont2.js.x', '.cont3', 'cont4' ]);
 		spyOn(router, 'require').andReturn({ action: '' });
 		
-		router.addController(null, [ 'cont1.js', 'cont2.js.x', '.foo' ]);
+		router.addControllers();
 		
-		expect(router.require.callCount).toEqual(2);
+		expect(fs.readdirSync).toHaveBeenCalledWith('app/controllers');
+		
+		expect(router.require.callCount).toEqual(3);
 		expect(router.require.argsForCall[0]).toEqual([ 'app/controllers/cont1.js' ]);
 		expect(router.require.argsForCall[1]).toEqual([ 'app/controllers/cont2.js.x' ]);
+		expect(router.require.argsForCall[2]).toEqual([ 'app/controllers/cont4' ]);
 		
-		expect(router.controllers).toEqual({ cont1: { action: '' }, cont2: { action: '' }});
+		expect(router.controllers).toEqual({ cont1: { action: '' }, cont2: { action: '' },
+				cont4: { action: '' }});
 	});
 	
 	it('should handle syntax errors on read', function() {
+		spyOn(fs, 'readdirSync').andReturn([ 'cont.js' ]);
 		spyOn(console, 'log');
 		spyOn(router, 'require').andThrow(new Error('Require Error'));
 		
-		router.addController(null, [ 'cont.js' ]);
+		router.addControllers();
 		
 		expect(console.log.mostRecentCall.args[0]).toContain('cont.js');
 		expect(console.log.mostRecentCall.args[0]).toContain('Require Error');
@@ -47,10 +52,11 @@ describe('#addController', function() {
 	});
 	
 	it('should handle an error passed in from readdir', function() {
+		spyOn(fs, 'readdirSync').andThrow(new Error('Test Error'));
 		spyOn(console, 'log');
 		spyOn(router, 'require').andReturn({ action: '' });
 
-		router.addController({ message: 'Test Error' }, [ 'cont.js' ]);
+		router.addControllers();
 		
 		expect(console.log.mostRecentCall.args[0]).toContain('Test Error');
 		expect(router.controllers).toEqual({});

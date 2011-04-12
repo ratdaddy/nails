@@ -10,28 +10,32 @@ this.routes = {};
 this.controllers = {};
 
 this.init = function() {
-	fs.readdir('app/controllers', this.addController);
+	this.addControllers();
 };
 
-this.addController = function(error, controller) {
-	if (error) {
-		console.log('Error reading controller directory: ' + error.message);
-	}
-	else {
-		for (x in controller) {
-			file = controller[x];
-			basename = file.substr(0, file.indexOf('.'));
-			if (basename.length > 0) {
-				try {
-					router.controllers[basename] = router.require('app/controllers/' + file);
-				}
-				catch (e) {
-					console.log('Error reading controller file: ' + file + ': ' + e.message);
-				}
-			}
+this.addControllers = function() {
+	try {
+		controller_files = fs.readdirSync('app/controllers');
+		for (x in controller_files) {
+			readController(controller_files[x]);
 		}
 	}
+	catch(e) {
+		console.log('Error reading controller directory: ' + e.message);
+	}
 };
+
+function readController(filename) {
+	basename = (index = filename.indexOf('.')) < 0 ? filename : filename.substr(0, index);
+	if (basename.length > 0) {
+		try {
+			router.controllers[basename] = router.require('app/controllers/' + filename);
+		}
+		catch (e) {
+			console.log('Error reading controller file: ' + filename + ': ' + e.message);
+		}
+	}
+}
 
 this.require = function(module) {
 	return require(module);
