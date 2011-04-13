@@ -5,6 +5,8 @@
  */
 
 fs = require('fs');
+jade = require('jade');
+us = require('underscore');
 
 this.routes = {};
 this.controllers = {};
@@ -57,21 +59,47 @@ function parseController(controller_action) {
 
 this.dispatch = function(url, request, response) {
 	if (url in this.routes) {
-		cont_act = this.routes[url];
-		this.controllers[cont_act.controller][cont_act.action](request, response);
+		this.dispatchAction(this.routes[url], request, response);
 	}
 	else {
 		fs.readFile('public' + url, function(error, data) {
 			if (error) {
-				response.writeHead(404, { 'Content-Type': 'text/plain' });
-				response.write('Not found: ' + url);
+				fileReadError(url, response);
 			}
 			else {
-				response.write(data);
+				sendFile(data, response);
 			}
-			response.end();
 		});
 	}
 };
+
+this.dispatchAction = function(route, request, response) {
+	controller = route.controller;
+	action = route.action;
+	
+	context = { locals: {} };
+	us.bind(this.controllers[controller][action], context['locals'], request, response)();
+	this.controllers[controller][action](request, response);
+	
+	jade.renderFile('app/views/' + controller + '/' + action + '.jade', context,
+			function(error, html) {
+		if (error) {
+			response.end(error.message);
+		}
+		else {
+			response.writeHead(200, { 'Content-Type': 'text/html' });
+			response.end(html);
+		}
+	});
+};
+
+function fileReadError(url, response) {
+	response.writeHead(404, { 'Content-Type': 'text/plain' });
+	response.end('Not found: ' + url);	
+}
+
+function sendFile(data, response) {
+	response.end(data);
+}
 
 global['router'] = this;

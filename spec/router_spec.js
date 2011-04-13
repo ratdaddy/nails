@@ -80,60 +80,107 @@ describe('#match', function() {
 		router.reset();
 	});
 	
-	it('adds a route', function() {
+	it('should add a route', function() {
 		router.match('route/path', 'controller#action');
 		expect(router.routes).toEqual({ 'route/path':
 				{ controller: 'controller', action: 'action' }});
 	});
 });
 
-describe('#dispatch', function() {
+describe('Dispatcher', function() {
 	beforeEach(function() {
 		router.reset();
 		router.routes['/url'] = { controller: 'cont', action: 'action' };
-	});
-	
-	it('does nothing if there is no matching url or static file', function() {
-		response = { writeHead: function() {}, write: function() {}, end: function() {} };
-		spyOn(response, 'writeHead');
-		spyOn(response, 'write');
-		spyOn(response, 'end');
-		spyOn(fs, 'readFile').andCallFake(function(error, callback) {
-			callback({ message: 'Not Found' });
-		});
-		
-		router.dispatch('/bogus', null, response);
-		
-		expect(response.writeHead).toHaveBeenCalledWith(404, { 'Content-Type': 'text/plain' });
-		expect(response.write.mostRecentCall.args[0]).toEqual('Not found: /bogus');
-		expect(response.end).toHaveBeenCalled();
-	});
-	
-	it('gets a static file if no matching url', function() {
-		response = { write: function() {}, end: function() {} };
-		spyOn(response, 'write');
-		spyOn(response, 'end');
-		spyOn(fs, 'readFile').andCallFake(function(error, callback) {
-			callback(null, 'Test Data');
-		});
-
-		router.dispatch('/file.ext', null, response);
-		
-		expect(fs.readFile.mostRecentCall.args[0]).toEqual('public/file.ext');
-		expect(response.write).toHaveBeenCalledWith('Test Data');
-		expect(response.end).toHaveBeenCalled();
-	});
-	
-	it('calls the action given a matching url', function() {
-		mock = { action: function() {}};
-		spyOn(mock, 'action');
-		router.controllers['cont'] = mock;
 		
 		request = 'request';
-		response = 'response';
+		response = { writeHead: function() {}, end: function() {} };
+	});
+	
+	describe('#dispatch', function() {
+		it('should respond with 404 if there is no matching url or static file', function() {
+			spyOn(response, 'writeHead');
+			spyOn(response, 'end');
+			spyOn(fs, 'readFile').andCallFake(function(error, callback) {
+				callback({ message: 'Not Found' });
+			});
+			
+			router.dispatch('/bogus', null, response);
+			
+			expect(response.writeHead).toHaveBeenCalledWith(404, { 'Content-Type': 'text/plain' });
+			expect(response.end.mostRecentCall.args[0]).toEqual('Not found: /bogus');
+			expect(response.end).toHaveBeenCalled();
+		});
 		
-		router.dispatch('/url', request, response);
+		it('should get a static file if no matching url', function() {
+			spyOn(response, 'end');
+			spyOn(fs, 'readFile').andCallFake(function(error, callback) {
+				callback(null, 'Test Data');
+			});
+	
+			router.dispatch('/file.ext', null, response);
+			
+			expect(fs.readFile.mostRecentCall.args[0]).toEqual('public/file.ext');
+			expect(response.end).toHaveBeenCalledWith('Test Data');
+	 	});
 		
-		expect(mock.action).toHaveBeenCalledWith(request, response);
+		it('should call the action given a matching url', function() {
+			spyOn(router, 'dispatchAction');
+			
+			router.dispatch('/url', request, response);
+			
+			expect(router.dispatchAction).toHaveBeenCalledWith(router.routes['/url'],
+					request, response);
+		});
+	});
+
+	describe('#dispatchAction', function() {
+		beforeEach(function() {
+			action_method = { action: function() {}};
+			spyOn(action_method, 'action');
+			router.controllers['cont'] = action_method;
+			
+			spyOn(response, 'writeHead');
+			spyOn(response, 'end');
+			
+			spyOn(us, 'bind').andCallFake(function(func, object) {
+				object.member = 'test';
+				return function() {};
+			});
+		});
+		
+		describe('successful render', function() {
+			beforeEach(function() {
+				spyOn(jade, 'renderFile').andCallFake(function(path, locals, func) {
+					func(null, 'Test HTML');
+				});
+			});
+
+			it('should call the action', function() {
+				router.dispatchAction(router.routes['/url'], request, response);
+				
+				expect(action_method.action).toHaveBeenCalledWith(request, response);
+			});
+			
+			it('should call the jade templater', function() {
+				router.dispatchAction(router.routes['/url'], request, response);
+	
+				expect(jade.renderFile.mostRecentCall.args[0]).toEqual('app/views/cont/action.jade');
+				expect(jade.renderFile.mostRecentCall.args[1]).toEqual({ locals: { member: 'test' }});
+				expect(response.writeHead).toHaveBeenCalledWith(200, { 'Content-Type': 'text/html' });
+				expect(response.end).toHaveBeenCalledWith('Test HTML');
+			});
+		});
+
+		
+		it('should handle template errors', function() {
+			spyOn(jade, 'renderFile').andCallFake(function(path, locals, func) {
+				func({ message: 'jade error' });
+			});
+			
+			router.dispatchAction(router.routes['/url'], request, response);
+			
+			expect(response.end.mostRecentCall.args[0]).toContain('jade error');
+		});
 	});
 });
+
