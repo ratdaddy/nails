@@ -142,9 +142,9 @@ describe('Dispatcher', function() {
 			spyOn(response, 'writeHead');
 			spyOn(response, 'end');
 			
-			spyOn(us, 'bind').andCallFake(function(func, object) {
+			spyOn(us, 'bind').andCallFake(function(func, object, req, res) {
 				object.member = 'test';
-				return function() {};
+				return function() { func(req, res); };
 			});
 		});
 		
@@ -155,9 +155,10 @@ describe('Dispatcher', function() {
 				});
 			});
 
-			it('should call the action', function() {
+			it('should call the action once', function() {
 				router.dispatchAction(router.routes['/url'], request, response);
 				
+				expect(action_method.action.callCount).toEqual(1);
 				expect(action_method.action).toHaveBeenCalledWith(request, response);
 			});
 			

@@ -79,7 +79,6 @@ this.dispatchAction = function(route, request, response) {
 	
 	context = { locals: {} };
 	us.bind(this.controllers[controller][action], context['locals'], request, response)();
-	this.controllers[controller][action](request, response);
 	
 	jade.renderFile('app/views/' + controller + '/' + action + '.jade', context,
 			function(error, html) {
