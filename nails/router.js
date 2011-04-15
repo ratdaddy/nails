@@ -78,7 +78,7 @@ this.dispatchAction = function(route, request, response) {
 	action = route.action;
 	
 	context = { locals: {} };
-	us.bind(this.controllers[controller][action], context['locals'], request, response)();
+	us.bind(this.controllers[controller][action], context.locals, request, response)();
 	
 	jade.renderFile('app/views/' + controller + '/' + action + '.jade', context,
 			function(error, html) {
@@ -101,4 +101,4 @@ function sendFile(data, response) {
 	response.end(data);
 }
 
-global['router'] = this;
+global.router = this;
