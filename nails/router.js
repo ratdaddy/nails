@@ -5,7 +5,6 @@
  */
 
 fs = require('fs');
-jade = require('jade');
 us = require('underscore');
 
 this.routes = {};
@@ -80,16 +79,7 @@ this.dispatchAction = function(route, request, response) {
 	context = { locals: {} };
 	us.bind(this.controllers[controller][action], context.locals, request, response)();
 	
-	jade.renderFile('app/views/' + controller + '/' + action + '.jade', context,
-			function(error, html) {
-		if (error) {
-			response.end(error.message);
-		}
-		else {
-			response.writeHead(200, { 'Content-Type': 'text/html' });
-			response.end(html);
-		}
-	});
+	view.renderAction(controller, action, context, request,response);
 };
 
 function fileReadError(url, response) {

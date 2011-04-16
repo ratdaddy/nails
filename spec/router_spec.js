@@ -6,6 +6,7 @@
 
 require.paths.push('./nails');
 require('router');
+require('view');
 
 describe('#init', function() {
 	it ('should read the directory of controllers', function() {
@@ -139,48 +140,26 @@ describe('Dispatcher', function() {
 			spyOn(action_method, 'action');
 			router.controllers['cont'] = action_method;
 			
-			spyOn(response, 'writeHead');
-			spyOn(response, 'end');
-			
 			spyOn(us, 'bind').andCallFake(function(func, object, req, res) {
 				object.member = 'test';
 				return function() { func(req, res); };
 			});
+			
+			spyOn(view, 'renderAction');
 		});
 		
-		describe('successful render', function() {
-			beforeEach(function() {
-				spyOn(jade, 'renderFile').andCallFake(function(path, locals, func) {
-					func(null, 'Test HTML');
-				});
-			});
-
-			it('should call the action once', function() {
-				router.dispatchAction(router.routes['/url'], request, response);
-				
-				expect(action_method.action.callCount).toEqual(1);
-				expect(action_method.action).toHaveBeenCalledWith(request, response);
-			});
-			
-			it('should call the jade templater', function() {
-				router.dispatchAction(router.routes['/url'], request, response);
-	
-				expect(jade.renderFile.mostRecentCall.args[0]).toEqual('app/views/cont/action.jade');
-				expect(jade.renderFile.mostRecentCall.args[1]).toEqual({ locals: { member: 'test' }});
-				expect(response.writeHead).toHaveBeenCalledWith(200, { 'Content-Type': 'text/html' });
-				expect(response.end).toHaveBeenCalledWith('Test HTML');
-			});
-		});
-
-		
-		it('should handle template errors', function() {
-			spyOn(jade, 'renderFile').andCallFake(function(path, locals, func) {
-				func({ message: 'jade error' });
-			});
-			
+		it('should call the action once', function() {
 			router.dispatchAction(router.routes['/url'], request, response);
 			
-			expect(response.end.mostRecentCall.args[0]).toContain('jade error');
+			expect(action_method.action.callCount).toEqual(1);
+			expect(action_method.action).toHaveBeenCalledWith(request, response);
+		});
+			
+		it('should call the view renderer', function() {
+			router.dispatchAction(router.routes['/url'], request, response);
+
+			expect(view.renderAction).toHaveBeenCalledWith('cont', 'action',
+					{ locals: { member: 'test' }}, request, response);
 		});
 	});
 });

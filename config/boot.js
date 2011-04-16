@@ -5,6 +5,7 @@
  */
 
 require('router');
+require('view');
 require('config/routes.js');
 
 router.init();
