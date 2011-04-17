@@ -76,10 +76,14 @@ this.dispatchAction = function(route, request, response) {
 	controller = route.controller;
 	action = route.action;
 	
-	context = { locals: {} };
+	context = { controller: controller, action: action, locals: {}, request: request,
+			response: response };
+	
+	context.locals.render = us.bind(view.render, { context: context });
+	
 	us.bind(this.controllers[controller][action], context.locals, request, response)();
 	
-	view.renderAction(controller, action, context, request,response);
+	context.locals.render();
 };
 
 function fileReadError(url, response) {

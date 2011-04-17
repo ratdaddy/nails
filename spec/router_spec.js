@@ -139,27 +139,33 @@ describe('Dispatcher', function() {
 			action_method = { action: function() {}};
 			spyOn(action_method, 'action');
 			router.controllers['cont'] = action_method;
-			
-			spyOn(us, 'bind').andCallFake(function(func, object, req, res) {
-				object.member = 'test';
-				return function() { func(req, res); };
-			});
-			
-			spyOn(view, 'renderAction');
+		
+			spyOn(view, 'render');
 		});
 		
 		it('should call the action once', function() {
+			spyOn(us, 'bind').andCallThrough();
+			
 			router.dispatchAction(router.routes['/url'], request, response);
+			
+			expect(us.bind.argsForCall[1][0]).toEqual(action_method.action);
+			expect(typeof us.bind.argsForCall[1][1].render).toEqual('function');
+			expect(us.bind.argsForCall[1][2]).toEqual(request);
+			expect(us.bind.argsForCall[1][3]).toEqual(response);
 			
 			expect(action_method.action.callCount).toEqual(1);
 			expect(action_method.action).toHaveBeenCalledWith(request, response);
 		});
 			
 		it('should call the view renderer', function() {
+			spyOn(us, 'bind').andReturn(view.render);
+			
 			router.dispatchAction(router.routes['/url'], request, response);
 
-			expect(view.renderAction).toHaveBeenCalledWith('cont', 'action',
-					{ locals: { member: 'test' }}, request, response);
+			expect(us.bind.argsForCall[0]).toEqual([ view.render,
+			        { context: { controller: 'cont', action: 'action',
+			        locals: { render: view.render }, request: request, response: response }} ]);
+			expect(view.render).toHaveBeenCalledWith();
 		});
 	});
 });

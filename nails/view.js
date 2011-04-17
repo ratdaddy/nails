@@ -6,15 +6,30 @@
 
 jade = require('jade');
 
-this.renderAction = function(controller, action, context, request, response) {
-	jade.renderFile('app/views/' + controller + '/' + action + '.jade', context,
-			function(error, html) {
+this.render = function(callback) {
+	if (typeof callback == 'function') {
+		this.context.async = true;
+		return us.bind(function(error, data) {
+			us.bind(callback, this.context.locals)(error, data);
+			view.renderAction(this.context);
+		}, this);
+	}
+	else {
+		if (!this.context.async) {
+			view.renderAction(this.context);
+		}
+	}
+};
+
+this.renderAction = function(context) {
+	jadefile = 'app/views/' + context.controller + '/' + context.action + '.jade';
+	jade.renderFile(jadefile, context, function(error, html) {
 		if (error) {
-			response.end(error.message);
+			context.response.end(error.message);
 		}
 		else {
-			response.writeHead(200, { 'Content-Type': 'text/html' });
-			response.end(html);
+			context.response.writeHead(200, { 'Content-Type': 'text/html' });
+			context.response.end(html);
 		}
 	});		
 };
