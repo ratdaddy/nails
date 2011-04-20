@@ -12,3 +12,8 @@ this.about = function(req, res) {
 	});
 	setTimeout(func, 1);
 };
+
+this.banner = function(req, res) {
+	this.title = 'Banner Page';
+	this.banner = req.params.message;
+};

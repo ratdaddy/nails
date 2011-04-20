@@ -7,7 +7,7 @@
 fs = require('fs');
 us = require('underscore');
 
-this.routes = {};
+this.routes = [];
 this.controllers = {};
 
 this.init = function() {
@@ -43,22 +43,43 @@ this.require = function(module) {
 };
 
 this.reset = function() {
-	this.routes = {};
+	this.routes = [];
 	this.controllers = {};
 };
 
 this.match = function(route_path, controller_action) {
-	this.routes[route_path] = parseController(controller_action);
+	this.routes.push(parseController(route_path, controller_action));
 };
 
-function parseController(controller_action) {
+function parseController(route_path, controller_action) {
 	parts = controller_action.split('#');
-	return { controller: parts[0], action: parts[1] };
+	paths = route_path.substr(1).split('/');
+
+	path_regex = '';
+	params = [];
+	us.each(paths, function(part) {
+		if (part.charAt(0) != ':') {
+			path_regex += '/' + part;
+		}
+		else {
+			path_regex += '/([^/]+)';
+			params.push(part.substr(1));
+		};
+	});
+	
+	return { path: { regex: new RegExp('^' + path_regex + '$'), params: params },
+			controller: parts[0], action: parts[1] };
 }
 
 this.dispatch = function(url, request, response) {
-	if (url in this.routes) {
-		this.dispatchAction(this.routes[url], request, response);
+	if (route = us.detect(this.routes, function(rte) {
+		return match = rte.path.regex.exec(url);
+	})) {
+		request.params = {};
+		us.each(route.path.params, function(param, idx) {
+			request.params[param] = match[idx + 1];
+		});
+		this.dispatchAction(route, request, response);
 	}
 	else {
 		fs.readFile('public' + url, function(error, data) {

@@ -8,6 +8,8 @@ require.paths.push('./nails');
 require('router');
 require('view');
 
+context = describe;
+
 describe('#init', function() {
 	it ('should read the directory of controllers', function() {
 		spyOn(router, 'addControllers');
@@ -71,7 +73,7 @@ describe('#reset', function() {
 		
 		router.reset();
 		
-		expect(router.routes).toEqual({});
+		expect(router.routes).toEqual([]);
 		expect(router.controllers).toEqual({});
 	});
 });
@@ -81,19 +83,51 @@ describe('#match', function() {
 		router.reset();
 	});
 	
-	it('should add a route', function() {
-		router.match('route/path', 'controller#action');
-		expect(router.routes).toEqual({ 'route/path':
-				{ controller: 'controller', action: 'action' }});
+	it('sets the controller and action', function() {
+		router.match('/anypath', 'controller#action');
+		
+		expect(router.routes[0].controller).toEqual('controller');
+		expect(router.routes[0].action).toEqual('action');
+	});
+	
+	context('fixed path', function() {
+		it('adds a simple regular expression matcher with no paramaeter names', function() {
+			router.match('/route/path', 'controller#action');
+
+			expect('' + router.routes[0].path.regex).toEqual('' + new RegExp('^/route/path$'));
+			expect(router.routes[0].path.params).toEqual([]);
+		});
+	});
+	
+	context('path with a parameter', function() {
+		it('adds a paramater-matching regular expression with parameter names', function() {
+			router.match('/route/:param1/path/:param2', 'controller#action');
+			
+			expect('' + router.routes[0].path.regex).
+					toEqual('' + new RegExp('^/route/([^/]+)/path/([^/]+)$'));
+			expect(router.routes[0].path.params).toEqual(['param1', 'param2']);
+		});
 	});
 });
 
 describe('Dispatcher', function() {
 	beforeEach(function() {
 		router.reset();
-		router.routes['/url'] = { controller: 'cont', action: 'action' };
+		router.routes.push({
+			path: { regex: new RegExp('^/url$'), params: [] },
+			controller: 'cont',
+			action: 'action'
+		});
+		router.routes.push({
+			path: {
+				regex: new RegExp('^/route/([^/]+)/path/([^/]+)$'),
+				params: [ 'param1', 'param2' ]
+			},
+			controller: 'cont',
+			action: 'action'
+		});
 		
-		request = 'request';
+		request = { request: 'request' };
 		response = { writeHead: function() {}, end: function() {} };
 	});
 	
@@ -109,7 +143,6 @@ describe('Dispatcher', function() {
 			
 			expect(response.writeHead).toHaveBeenCalledWith(404, { 'Content-Type': 'text/plain' });
 			expect(response.end.mostRecentCall.args[0]).toEqual('Not found: /bogus');
-			expect(response.end).toHaveBeenCalled();
 		});
 		
 		it('should get a static file if no matching url', function() {
@@ -124,13 +157,30 @@ describe('Dispatcher', function() {
 			expect(response.end).toHaveBeenCalledWith('Test Data');
 	 	});
 		
-		it('should call the action given a matching url', function() {
-			spyOn(router, 'dispatchAction');
+		context('dispatches an action', function() {
+			beforeEach(function() {
+				spyOn(router, 'dispatchAction');
+			});
+
+		
+			it('calls the action given a matching url', function() {
+				router.dispatch('/url', request, response);
+				
+				expect(router.dispatchAction).toHaveBeenCalledWith(router.routes[0],
+						request, response);
+			});
 			
-			router.dispatch('/url', request, response);
+			it('sets params array to be empty for path with no params', function() {
+				router.dispatch('/url', request, response);
+				
+				expect(request.params).toEqual({});
+			});
 			
-			expect(router.dispatchAction).toHaveBeenCalledWith(router.routes['/url'],
-					request, response);
+			it('sets params array with params from the path', function() {
+				router.dispatch('/route/p1/path/p2', request, response);
+				
+				expect(request.params).toEqual({ param1: 'p1', param2: 'p2' })
+			});
 		});
 	});
 
@@ -146,7 +196,7 @@ describe('Dispatcher', function() {
 		it('should call the action once', function() {
 			spyOn(us, 'bind').andCallThrough();
 			
-			router.dispatchAction(router.routes['/url'], request, response);
+			router.dispatchAction(router.routes[0], request, response);
 			
 			expect(us.bind.argsForCall[1][0]).toEqual(action_method.action);
 			expect(typeof us.bind.argsForCall[1][1].render).toEqual('function');
@@ -160,7 +210,7 @@ describe('Dispatcher', function() {
 		it('should call the view renderer', function() {
 			spyOn(us, 'bind').andReturn(view.render);
 			
-			router.dispatchAction(router.routes['/url'], request, response);
+			router.dispatchAction(router.routes[0], request, response);
 
 			expect(us.bind.argsForCall[0]).toEqual([ view.render,
 			        { context: { controller: 'cont', action: 'action',
