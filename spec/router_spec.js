@@ -179,7 +179,7 @@ describe('Dispatcher', function() {
 			it('sets params array with params from the path', function() {
 				router.dispatch('/route/p1/path/p2', request, response);
 				
-				expect(request.params).toEqual({ param1: 'p1', param2: 'p2' })
+				expect(request.params).toEqual({ param1: 'p1', param2: 'p2' });
 			});
 		});
 	});

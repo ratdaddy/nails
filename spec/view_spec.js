@@ -68,35 +68,84 @@ describe('#render', function() {
 
 describe('#renderAction', function() {
 	beforeEach(function() {
-		request = 'request';
-		response = { writeHead: function() {}, end: function() {} };
-		context = { controller: 'cont', action: 'action', locals: { member: 'test' },
-				request: request, response: response };
-		
-		spyOn(response, 'writeHead');
-		spyOn(response, 'end');
-	});
-
-	it('should call the jade templater', function() {
-		spyOn(jade, 'renderFile').andCallFake(function(path, locals, func) {
-			func(null, 'Test HTML');
-		});
-		
-		view.renderAction(context);
-
-		expect(jade.renderFile.mostRecentCall.args[0]).toEqual('app/views/cont/action.jade');
-		expect(jade.renderFile.mostRecentCall.args[1]).toEqual(context);
-		expect(response.writeHead).toHaveBeenCalledWith(200, { 'Content-Type': 'text/html' });
-		expect(response.end).toHaveBeenCalledWith('Test HTML');
+		context = { controller: 'cont', action: 'action' };
 	});
 	
-	it('should handle template errors', function() {
-		spyOn(jade, 'renderFile').andCallFake(function(path, locals, func) {
-			func({ message: 'jade error' });
-		});
+	it('saves the ejs filename', function() {
+		view.renderAction(context);
+		
+		expect(context.renderFilename).toEqual('app/views/cont/action.ejs');
+	});
+	
+	it('reads the ejs file', function() {
+		spyOn(fs, 'readFile');
 		
 		view.renderAction(context);
 		
-		expect(response.end.mostRecentCall.args[0]).toContain('jade error');
+		expect(fs.readFile).toHaveBeenCalledWith('app/views/cont/action.ejs', 'ascii',
+				any(Function));
+	});
+	
+	it('binds the context to the renderEJSData function', function() {
+		spyOn(us, 'bind');
+		
+		view.renderAction(context);
+		
+		expect(us.bind).toHaveBeenCalledWith(view.renderEJSData, context);
+	});
+
+	describe('#renderEJSData', function() {
+		beforeEach(function() {
+			response = context.response = { writeHead: function() {}, end: function() {} };
+
+			context.renderFilename = '/test/file/name.ejs';	
+			
+			spyOn(response, 'writeHead');
+			spyOn(response, 'end');
+		});
+		
+		describe('a succesful render', function() {
+			beforeEach(function() {
+				spyOn(ejs, 'render').andReturn('rendered data');
+				us.bind(view.renderEJSData, context)(null, 'ejs content');
+			});
+			
+			it('calls the ejs renderer', function() {
+				expect(ejs.render).toHaveBeenCalledWith('ejs content', context);
+			});
+			
+			it('writes an html header', function() {
+				expect(response.writeHead).toHaveBeenCalledWith(200, { 'Content-Type': 'text/html' });
+			});
+			
+			it('outputs the data', function() {
+				expect(response.end).toHaveBeenCalledWith('rendered data');
+			});
+		});
+		
+		describe('an error while rendering', function() {
+			beforeEach(function() {
+				spyOn(ejs, 'render').andThrow(new Error('rendering error'));
+				us.bind(view.renderEJSData, context)(null, null);
+			});
+			
+			it('outputs the ejs error', function() {
+				expect(response.end.mostRecentCall.args[0]).toContain('rendering error');
+			});
+			
+			it('outputs the filename', function() {
+				expect(response.end.mostRecentCall.args[0]).toContain('/test/file/name.ejs');
+			});
+		});
+		
+		describe('a file read error', function() {
+			beforeEach(function() {
+				us.bind(view.renderEJSData, context)(new Error('file read error'));
+			});
+			
+			it('outputs the file read error', function() {
+				expect(response.end.mostRecentCall.args[0]).toContain('file read error');
+			});
+		});
 	});
 });

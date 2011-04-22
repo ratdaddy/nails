@@ -5,6 +5,7 @@
  */
 
 jade = require('jade');
+ejs = require('ejs');
 
 this.render = function(callback) {
 	if (typeof callback == 'function') {
@@ -22,16 +23,27 @@ this.render = function(callback) {
 };
 
 this.renderAction = function(context) {
-	jadefile = 'app/views/' + context.controller + '/' + context.action + '.jade';
-	jade.renderFile(jadefile, context, function(error, html) {
-		if (error) {
-			context.response.end(error.message);
+	context.renderFilename = 'app/views/' + context.controller + '/' + context.action + '.ejs';
+	fs.readFile(context.renderFilename, 'ascii', us.bind(this.renderEJSData, context));
+};
+
+this.renderEJSData = function(error, data) {
+	if (error) {
+		this.response.end('render error reading file: ' + error.message);
+	}
+	else {
+		try {
+			rendered = ejs.render(data, this);
 		}
-		else {
-			context.response.writeHead(200, { 'Content-Type': 'text/html' });
-			context.response.end(html);
+		catch(e) {
+			this.response.end('EJS error rendering file: ' + this.renderFilename + ': ' +
+					e.message);
+			return;
 		}
-	});		
+			
+		this.response.writeHead(200, { 'Content-Type': 'text/html' });
+		this.response.end(rendered);
+	}
 };
 
 global.view = this;
