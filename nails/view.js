@@ -28,20 +28,20 @@ this.renderAction = function(context) {
 
 this.renderEJSData = function(error, data) {
 	if (error) {
-		this.response.end('render error reading file: ' + error.message);
+		this.locals.response.end('render error reading file: ' + error.message);
 	}
 	else {
 		try {
 			rendered = ejs.render(data, this);
 		}
 		catch(e) {
-			this.response.end('EJS error rendering file: ' + this.renderFilename + ': ' +
+			this.locals.response.end('EJS error rendering file: ' + this.renderFilename + ': ' +
 					e.message);
 			return;
 		}
 			
-		this.response.writeHead(200, { 'Content-Type': 'text/html' });
-		this.response.end(rendered);
+		this.locals.response.writeHead(200, { 'Content-Type': 'text/html' });
+		this.locals.response.end(rendered);
 	}
 };
 

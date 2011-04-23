@@ -127,59 +127,58 @@ describe('Dispatcher', function() {
 			action: 'action'
 		});
 		
-		request = { request: 'request' };
-		response = { writeHead: function() {}, end: function() {} };
+		req = { request: 'request' };
+		res = { writeHead: function() {}, end: function() {} };
 	});
 	
 	describe('#dispatch', function() {
 		it('should respond with 404 if there is no matching url or static file', function() {
-			spyOn(response, 'writeHead');
-			spyOn(response, 'end');
+			spyOn(res, 'writeHead');
+			spyOn(res, 'end');
 			spyOn(fs, 'readFile').andCallFake(function(error, callback) {
 				callback({ message: 'Not Found' });
 			});
 			
-			router.dispatch('/bogus', null, response);
+			router.dispatch('/bogus', null, res);
 			
-			expect(response.writeHead).toHaveBeenCalledWith(404, { 'Content-Type': 'text/plain' });
-			expect(response.end.mostRecentCall.args[0]).toEqual('Not found: /bogus');
+			expect(res.writeHead).toHaveBeenCalledWith(404, { 'Content-Type': 'text/plain' });
+			expect(res.end.mostRecentCall.args[0]).toEqual('Not found: /bogus');
 		});
 		
 		it('should get a static file if no matching url', function() {
-			spyOn(response, 'end');
+			spyOn(res, 'end');
 			spyOn(fs, 'readFile').andCallFake(function(error, callback) {
 				callback(null, 'Test Data');
 			});
 	
-			router.dispatch('/file.ext', null, response);
+			router.dispatch('/file.ext', null, res);
 			
 			expect(fs.readFile.mostRecentCall.args[0]).toEqual('public/file.ext');
-			expect(response.end).toHaveBeenCalledWith('Test Data');
+			expect(res.end).toHaveBeenCalledWith('Test Data');
 	 	});
 		
 		context('dispatches an action', function() {
 			beforeEach(function() {
 				spyOn(router, 'dispatchAction');
 			});
-
 		
 			it('calls the action given a matching url', function() {
-				router.dispatch('/url', request, response);
+				router.dispatch('/url', req, res);
 				
 				expect(router.dispatchAction).toHaveBeenCalledWith(router.routes[0],
-						request, response);
+						req, res);
 			});
 			
 			it('sets params array to be empty for path with no params', function() {
-				router.dispatch('/url', request, response);
+				router.dispatch('/url', req, res);
 				
-				expect(request.params).toEqual({});
+				expect(req.params).toEqual({});
 			});
 			
 			it('sets params array with params from the path', function() {
-				router.dispatch('/route/p1/path/p2', request, response);
+				router.dispatch('/route/p1/path/p2', req, res);
 				
-				expect(request.params).toEqual({ param1: 'p1', param2: 'p2' });
+				expect(req.params).toEqual({ param1: 'p1', param2: 'p2' });
 			});
 		});
 	});
@@ -187,35 +186,48 @@ describe('Dispatcher', function() {
 	describe('#dispatchAction', function() {
 		beforeEach(function() {
 			action_method = { action: function() {}};
-			spyOn(action_method, 'action');
 			router.controllers['cont'] = action_method;
-		
-			spyOn(view, 'render');
-		});
-		
-		it('should call the action once', function() {
-			spyOn(us, 'bind').andCallThrough();
 			
-			router.dispatchAction(router.routes[0], request, response);
-			
-			expect(us.bind.argsForCall[1][0]).toEqual(action_method.action);
-			expect(typeof us.bind.argsForCall[1][1].render).toEqual('function');
-			expect(us.bind.argsForCall[1][2]).toEqual(request);
-			expect(us.bind.argsForCall[1][3]).toEqual(response);
-			
-			expect(action_method.action.callCount).toEqual(1);
-			expect(action_method.action).toHaveBeenCalledWith(request, response);
-		});
-			
-		it('should call the view renderer', function() {
-			spyOn(us, 'bind').andReturn(view.render);
-			
-			router.dispatchAction(router.routes[0], request, response);
+			spyOn(action_method, 'action').andCallFake(function() { action_context = this; });
+			spyOn(view, 'render').andCallFake(function() { render_context = this; });
+			spyOn(view, 'wrapCallback').andCallFake(function() { wrapCallback_context = this; });
 
-			expect(us.bind.argsForCall[0]).toEqual([ view.render,
-			        { context: { controller: 'cont', action: 'action',
-			        locals: { render: view.render }, request: request, response: response }} ]);
-			expect(view.render).toHaveBeenCalledWith();
+			router.dispatchAction(router.routes[0], req, res);
+		});
+
+		it('calls the right action', function() {
+			expect(action_method.action).toHaveBeenCalled();
+		});
+		
+		it('sets the right context for the wrapCallback function', function() {
+			action_context.render();
+			action_context.wrapCallback();
+			
+			expect(wrapCallback_context).toEqual(render_context);
+		});
+		
+		it('calls the render function', function() {
+			expect(view.render).toHaveBeenCalled();
+		});
+		
+		it('sets controller in the render context', function() {
+			expect(render_context.context.controller).toEqual('cont');
+		});	
+		
+		it('sets action in the render context', function() {
+			expect(render_context.context.action).toEqual('action');
+		});
+		
+		it('passes locals in the render context', function() {
+			expect(render_context.context.locals).toEqual(action_context);
+		});
+		
+		it('sets locals.request in the render context', function() {
+			expect(render_context.context.locals.request).toEqual(req);
+		});
+		
+		it('sets locals.response in the render context', function() {
+			expect(render_context.context.locals.response).toEqual(res);
 		});
 	});
 });

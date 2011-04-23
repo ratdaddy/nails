@@ -97,12 +97,13 @@ this.dispatchAction = function(route, request, response) {
 	controller = route.controller;
 	action = route.action;
 	
-	context = { controller: controller, action: action, locals: {}, request: request,
-			response: response };
+	context = { controller: controller, action: action, locals: { request: request,
+			response: response }};
 	
 	context.locals.render = us.bind(view.render, { context: context });
+	context.locals.wrapCallback = us.bind(view.wrapCallback, { context: context });
 	
-	us.bind(this.controllers[controller][action], context.locals, request, response)();
+	us.bind(this.controllers[controller][action], context.locals)();
 	
 	context.locals.render();
 };

@@ -71,7 +71,7 @@ describe('#wrapCallback', function() {
 
 describe('#renderAction', function() {
 	beforeEach(function() {
-		context = { controller: 'cont', action: 'action' };
+		context = { controller: 'cont', action: 'action', locals: {}};
 	});
 	
 	it('saves the ejs filename', function() {
@@ -99,7 +99,7 @@ describe('#renderAction', function() {
 
 	describe('#renderEJSData', function() {
 		beforeEach(function() {
-			response = context.response = { writeHead: function() {}, end: function() {} };
+			response = context.locals.response = { writeHead: function() {}, end: function() {} };
 
 			context.renderFilename = '/test/file/name.ejs';	
 			

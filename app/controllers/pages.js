@@ -2,18 +2,18 @@
  * An example Nails pages controller
  */
 
-this.home = function(req, res) {
+this.home = function() {
 	this.title = 'Home Page';
 };
 
-this.about = function(req, res) {
+this.about = function() {
 	func = this.wrapCallback(function() {
 		this.title = 'About This Site';
 	});
 	setTimeout(func, 1);
 };
 
-this.banner = function(req, res) {
+this.banner = function() {
 	this.title = 'Banner Page';
-	this.banner = req.params.message;
+	this.banner = this.request.params.message;
 };
