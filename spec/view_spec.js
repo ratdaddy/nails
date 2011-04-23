@@ -10,59 +10,62 @@ require('view');
 describe('#render', function() {
 	beforeEach(function() {
 		view.context = {};
+		spyOn(view, 'renderAction');
 	});
 	
-	describe('with callback', function() {
-		it('should return a function', function() {
-			expect(typeof view.render(function() {})).toEqual('function');
-		});
+	it('calls renderAction if not async', function() {
+		view.render();
 		
-		it('should set the async flag', function() {
-			view.render(function() {});
-			
-			expect(view.context.async).toBeTruthy();
-		});
-	
-		it ('should bind the callback to context', function() {
-			mock = { func: function() {}};
-			spyOn(us, 'bind').andCallThrough();
-			spyOn(mock, 'func');
-			spyOn(view, 'renderAction');
-			
-			view.context.locals = 'test locals';
-			context = view.context;
-			
-			callback = us.bind(view.render, { context: context })(mock.func);
-			callback('error', 'data');
-			
-			expect(us.bind.callCount).toEqual(3);
-			expect(us.bind).toHaveBeenCalledWith(mock.func, context.locals);
-			expect(mock.func).toHaveBeenCalledWith('error', 'data');
-			expect(view.renderAction).toHaveBeenCalledWith(context);
-		});
+		expect(view.renderAction).toHaveBeenCalledWith(view.context);
 	});
 	
-	describe('without callback', function() {
-		beforeEach(function() {
-			spyOn(view, 'renderAction');
-		});
+	it('does not call renderAction if async ', function() {
+		view.wrapCallback(function() {});
+		view.render();
 		
-		it('should return nothing', function() {
-			expect(view.render()).not.toBeDefined();
-		});
+		expect(view.renderAction).not.toHaveBeenCalled();
+	});
+});
+
+describe('#wrapCallback', function() {
+	beforeEach(function() {
+		spyOn(view, 'renderAction');
+		view.context = {};
+	});
+	
+	it('sets the async flag', function() {
+		view.wrapCallback(function() {});
 		
-		it('should call renderAction if not async', function() {
-			view.render();
-			
-			expect(view.renderAction).toHaveBeenCalledWith(view.context);
-		});
+		expect(view.context.async).toBeTruthy();
+	});
+	
+	it('binds the callback to context.locals', function() {
+		view.context.locals = 'test locals';
 		
-		it('should not call renderAction if async ', function() {
-			view.render(function() {});
-			view.render();
-			
-			expect(view.renderAction).not.toHaveBeenCalled();
-		});
+		var the_context;
+
+		view.wrapCallback(function() { the_context = this; })();
+		
+		expect(view.context.locals).toEqual(the_context);
+	});
+	
+	it('calls the callback with error and data', function() {
+		mock = { callback: function() {}};
+		spyOn(mock, 'callback');
+		
+		view.wrapCallback(mock.callback)('error', 'data');
+		
+		expect(mock.callback).toHaveBeenCalledWith('error', 'data');
+	});
+	
+	it('calls view#renderAction only after callback is executed', function() {
+		callback = view.wrapCallback(function() {});
+		
+		expect(view.renderAction).not.toHaveBeenCalled();
+		
+		callback();
+		
+		expect(view.renderAction).toHaveBeenCalledWith(view.context);
 	});
 });
 

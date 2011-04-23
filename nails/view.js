@@ -8,18 +8,17 @@ jade = require('jade');
 ejs = require('ejs');
 
 this.render = function(callback) {
-	if (typeof callback == 'function') {
-		this.context.async = true;
-		return us.bind(function(error, data) {
-			us.bind(callback, this.context.locals)(error, data);
-			view.renderAction(this.context);
-		}, this);
+	if (!this.context.async) {
+		view.renderAction(this.context);
 	}
-	else {
-		if (!this.context.async) {
-			view.renderAction(this.context);
-		}
-	}
+};
+
+this.wrapCallback = function(callback) {
+	this.context.async = true;
+	return us.bind(function(error, data) {
+		us.bind(callback, this.context.locals)(error, data);
+		view.renderAction(this.context);
+	}, this);
 };
 
 this.renderAction = function(context) {

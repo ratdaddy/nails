@@ -7,7 +7,7 @@ this.home = function(req, res) {
 };
 
 this.about = function(req, res) {
-	func = this.render(function() {
+	func = this.wrapCallback(function() {
 		this.title = 'About This Site';
 	});
 	setTimeout(func, 1);
