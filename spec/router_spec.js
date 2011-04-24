@@ -108,6 +108,26 @@ describe('#match', function() {
 			expect(router.routes[0].path.params).toEqual(['param1', 'param2']);
 		});
 	});
+	
+	context('via option', function() {
+		it('adds via ANY if nothing specified', function() {
+			router.match('/path', 'controller#action');
+			
+			expect(router.routes[0].via).toEqual('ANY');
+		});
+		
+		it('adds a single valid via', function() {
+			router.match('/path', 'controller#action', { via: 'get' });
+			
+			expect(router.routes[0].via).toEqual('GET');
+		});
+		
+		it('adds multiple valid vias', function() {
+			router.match('/path', 'controller#action', { via: [ 'get', 'put' ] });
+
+			expect(router.routes[0].via).toEqual([ 'GET', 'PUT' ]);
+		});
+	});
 });
 
 describe('Dispatcher', function() {
@@ -116,7 +136,8 @@ describe('Dispatcher', function() {
 		router.routes.push({
 			path: { regex: new RegExp('^/url$'), params: [] },
 			controller: 'cont',
-			action: 'action'
+			action: 'action',
+			via: 'ANY'
 		});
 		router.routes.push({
 			path: {
@@ -124,7 +145,8 @@ describe('Dispatcher', function() {
 				params: [ 'param1', 'param2' ]
 			},
 			controller: 'cont',
-			action: 'action'
+			action: 'action',
+			via: 'ANY'
 		});
 		
 		req = { request: 'request' };
@@ -165,8 +187,7 @@ describe('Dispatcher', function() {
 			it('calls the action given a matching url', function() {
 				router.dispatch('/url', req, res);
 				
-				expect(router.dispatchAction).toHaveBeenCalledWith(router.routes[0],
-						req, res);
+				expect(router.dispatchAction).toHaveBeenCalledWith(router.routes[0], req, res);
 			});
 			
 			it('sets params array to be empty for path with no params', function() {
@@ -179,6 +200,46 @@ describe('Dispatcher', function() {
 				router.dispatch('/route/p1/path/p2', req, res);
 				
 				expect(req.params).toEqual({ param1: 'p1', param2: 'p2' });
+			});
+			
+			context('single via set', function() {
+				beforeEach(function() {
+					singleVia = router.routes.push({
+						path: { regex: new RegExp('^/get$'), params: [] },
+						controller: 'cont',
+						action: 'getAction',
+						via: 'GET'
+					}) - 1;
+					multiVia = router.routes.push({
+						path: { regex: new RegExp('^/get-post$'), params: [] },
+						controller: 'cont',
+						action: 'getAction',
+						via: [ 'GET', 'POST' ]
+					}) - 1;
+				});
+				
+				it('calls dispatch when the method matches single via', function() {
+					req.method = 'GET';
+					router.dispatch('/get', req, res);
+					
+					expect(router.dispatchAction).toHaveBeenCalledWith(router.routes[singleVia],
+							req, res);
+				});
+				
+				it('calls dispatch when the method matches a set of vias', function() {
+					req.method = 'POST';
+					router.dispatch('/get-post', req, res);
+					
+					expect(router.dispatchAction).toHaveBeenCalledWith(router.routes[multiVia],
+							req, res);
+				});
+				
+				it('does not dispatch when the method does not match via', function() {
+					req.method = 'PUT';
+					router.dispatch('/get', req, res);
+					
+					expect(router.dispatchAction).not.toHaveBeenCalled();
+				});
 			});
 		});
 	});

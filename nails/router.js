@@ -47,11 +47,24 @@ this.reset = function() {
 	this.controllers = {};
 };
 
-this.match = function(route_path, controller_action) {
-	this.routes.push(parseController(route_path, controller_action));
+this.match = function(route_path, controller_action, options) {
+	this.routes.push(parseController(route_path, controller_action, options));
 };
 
-function parseController(route_path, controller_action) {
+function parseController(route_path, controller_action, options) {
+	options = options || {};
+	if (options.via) {
+		if (us.isArray(options.via)) {
+			via = us.map(options.via, function(item) { return item.toUpperCase(); });
+		}
+		else {
+			via = options.via.toUpperCase();
+		}
+	}
+	else {
+		via = 'ANY';
+	}
+	
 	parts = controller_action.split('#');
 	paths = route_path.substr(1).split('/');
 
@@ -68,12 +81,13 @@ function parseController(route_path, controller_action) {
 	});
 	
 	return { path: { regex: new RegExp('^' + path_regex + '$'), params: params },
-			controller: parts[0], action: parts[1] };
+			controller: parts[0], action: parts[1], via: via };
 }
 
 this.dispatch = function(url, request, response) {
 	if (route = us.detect(this.routes, function(rte) {
-		return match = rte.path.regex.exec(url);
+		match = rte.path.regex.exec(url);
+		return match && (rte.via == 'ANY' || (rte.via.indexOf(request.method) != -1));
 	})) {
 		request.params = {};
 		us.each(route.path.params, function(param, idx) {
