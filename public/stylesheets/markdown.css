@@ -1,0 +1,32 @@
+@CHARSET "UTF-8";
+#content {
+	margin: 30px auto;
+	width: 800px;
+}
+
+#readme {
+	border: 1px solid #ddd;
+	background-color: #f8f8f8;
+	padding: 1em;
+}
+
+#readme pre {
+	border: 1px solid #ddd;
+	background-color: #eee;
+	padding: 0.5em;
+}
+
+#readme pre code {
+	line-height: 1.2em;
+	border: none;
+}
+
+#readme code {
+	border: 1px solid #ddd;
+}
+
+#readme h2 {
+	border-top: 3px solid #ddd;
+	padding-top: 0.8em;
+}
+	

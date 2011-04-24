@@ -19,11 +19,18 @@ describe('#render', function() {
 		expect(view.renderAction).toHaveBeenCalledWith(view.context);
 	});
 	
-	it('does not call renderAction if async ', function() {
+	it('does not call renderAction if async', function() {
 		view.wrapCallback(function() {});
 		view.render();
 		
 		expect(view.renderAction).not.toHaveBeenCalled();
+	});
+	
+	it('calls only calls the first time it is called', function() {
+		view.render();
+		view.render();
+
+		expect(view.renderAction.callCount).toEqual(1);
 	});
 });
 

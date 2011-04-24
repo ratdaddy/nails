@@ -8,8 +8,9 @@ jade = require('jade');
 ejs = require('ejs');
 
 this.render = function(callback) {
-	if (!this.context.async) {
+	if (!this.context.async && !this.context.hasBeenRendered) {
 		view.renderAction(this.context);
+		this.context.hasBeenRendered = true;
 	}
 };
 

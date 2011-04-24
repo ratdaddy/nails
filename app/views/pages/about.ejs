@@ -1,9 +1,14 @@
 <html>
 	<head>
 		<title><%= title %></title>
+		<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/combo?3.3.0/build/cssfonts/fonts-min.css&3.3.0/build/cssreset/reset-min.css&3.3.0/build/cssbase/base-min.css">
+		<link type="text/css" rel="stylesheet" href="stylesheets/markdown.css" />
 	</head>
 	<body>
-		<h1>pages#about</h1>
-		<p> Find me in app/views/pages/about.ejs</p>
+		<div id="content">
+			<div id="readme" >
+				<%- readme %>
+			</div>
+		</div>
 	</body>
 </html>
