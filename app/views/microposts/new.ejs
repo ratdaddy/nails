@@ -1,0 +1,13 @@
+<html>
+<head>
+<title><%= title %></title>
+</head>
+<body>
+  <h1>New Micropost</h1>
+  <form action="/microposts" method="post">
+    <label for="micropost_content">Post</label><br/>
+    <div><textarea id="micropost_content" name="micropost[content]"></textarea></div>
+    <div><input id="micropost_submit" name="commit" type="submit" value="Create Micropost" /></div>
+  </form>
+</body>
+</html>

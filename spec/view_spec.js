@@ -78,6 +78,7 @@ describe('#wrapCallback', function() {
 
 describe('#renderAction', function() {
 	beforeEach(function() {
+		spyOn(fs, 'readFile');
 		context = { controller: 'cont', action: 'action', locals: {}};
 	});
 	
@@ -88,8 +89,6 @@ describe('#renderAction', function() {
 	});
 	
 	it('reads the ejs file', function() {
-		spyOn(fs, 'readFile');
-		
 		view.renderAction(context);
 		
 		expect(fs.readFile).toHaveBeenCalledWith('app/views/cont/action.ejs', 'ascii',

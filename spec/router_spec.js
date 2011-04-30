@@ -7,6 +7,7 @@
 require.paths.push('./nails');
 require('router');
 require('view');
+events = require('events');
 
 context = describe;
 
@@ -149,7 +150,7 @@ describe('Dispatcher', function() {
 			via: 'ANY'
 		});
 		
-		req = { request: 'request' };
+		req = { request: 'request', method: 'GET' };
 		res = { writeHead: function() {}, end: function() {} };
 	});
 	
@@ -181,10 +182,25 @@ describe('Dispatcher', function() {
 		
 		context('dispatches an action', function() {
 			beforeEach(function() {
+				spyOn(router, 'dispatchPost');
 				spyOn(router, 'dispatchAction');
 			});
+			
+			it('calls dispatchPost given a matching url when it is the POST method', function() {
+				req.method = 'POST';
+				router.dispatch('/url', req, res);
+				
+				expect(router.dispatchPost).toHaveBeenCalledWith(router.routes[0], req, res);
+			});
+			
+			it('does not directly call dispatchAction when it is a POST method', function() {
+				req.method = 'POST';
+				router.dispatch('/url', req, res);
+				
+				expect(router.dispatchAction).not.toHaveBeenCalled();
+			});
 		
-			it('calls the action given a matching url', function() {
+			it('calls dispatchAction given a matching url', function() {
 				router.dispatch('/url', req, res);
 				
 				expect(router.dispatchAction).toHaveBeenCalledWith(router.routes[0], req, res);
@@ -202,6 +218,13 @@ describe('Dispatcher', function() {
 				expect(req.params).toEqual({ param1: 'p1', param2: 'p2' });
 			});
 			
+			it('sets params array with params from the path even when method is POST', function() {
+				req.method = 'POST';
+				router.dispatch('/route/p1/path/p2', req, res);
+				
+				expect(req.params).toEqual({ param1: 'p1', param2: 'p2' });
+			});
+			
 			context('single via set', function() {
 				beforeEach(function() {
 					singleVia = router.routes.push({
@@ -211,10 +234,10 @@ describe('Dispatcher', function() {
 						via: 'GET'
 					}) - 1;
 					multiVia = router.routes.push({
-						path: { regex: new RegExp('^/get-post$'), params: [] },
+						path: { regex: new RegExp('^/get-delete$'), params: [] },
 						controller: 'cont',
 						action: 'getAction',
-						via: [ 'GET', 'POST' ]
+						via: [ 'GET', 'DELETE' ]
 					}) - 1;
 				});
 				
@@ -227,8 +250,8 @@ describe('Dispatcher', function() {
 				});
 				
 				it('calls dispatch when the method matches a set of vias', function() {
-					req.method = 'POST';
-					router.dispatch('/get-post', req, res);
+					req.method = 'DELETE';
+					router.dispatch('/get-delete', req, res);
 					
 					expect(router.dispatchAction).toHaveBeenCalledWith(router.routes[multiVia],
 							req, res);
@@ -242,6 +265,90 @@ describe('Dispatcher', function() {
 				});
 			});
 		});
+	});
+	
+	describe('#dispatchPost', function() {
+		beforeEach(function() {
+			spyOn(router, 'dispatchAction');
+			req = {};
+			us.extend(req, new events.EventEmitter());
+		});
+		
+		it('calls #dispatchAction when it gets an end', function() {
+			dispatchAndWait(req, function() {});	
+			
+			runs(function() {
+				expect(router.dispatchAction).toHaveBeenCalledWith('route', req, 'response');
+			});
+		});
+		
+		it('sets a simple parameter', function() {
+			dispatchAndWait(req, function() {
+				req.emit('data', new Buffer('param=value'));
+			});
+			
+			runs(function() {
+				expect(router.dispatchAction.mostRecentCall.args[1].params).
+						toEqual({ param: 'value' });
+			});			
+		});
+		
+		it('handles crlf properly', function() {
+			dispatchAndWait(req, function() {
+				req.emit('data', new Buffer('param=value1\r\nvalue2\r\nvalue3'));
+			});
+			
+			runs(function() {
+				expect(router.dispatchAction.mostRecentCall.args[1].params).
+						toEqual({ param: 'value1\nvalue2\nvalue3' });
+			});
+		});
+		
+		it('sets a simple parameter when emit data called twice', function() {
+			dispatchAndWait(req, function() {
+				req.emit('data', new Buffer('param1=value1&'));
+				req.emit('data', new Buffer('param2=value2'));
+			});
+			
+			runs(function() {
+				expect(router.dispatchAction.mostRecentCall.args[1].params).
+						toEqual({ param1: 'value1', param2: 'value2' });
+			});			
+		});
+		
+		it('sets a single-level complex parameter', function() {
+			dispatchAndWait(req, function() {
+				req.emit('data', new Buffer('param[subparam1]=value1&param[subparam2]=value2'));
+			});
+			
+			runs(function() {
+				expect(router.dispatchAction.mostRecentCall.args[1].params).
+						toEqual({ param: { subparam1: 'value1', subparam2: 'value2' }});
+			});
+		});
+		
+// TODO: make POST query parsing work for multi level keys
+//
+//		it('sets a multi-level complex parameter', function() {
+//			dispatchAndWait(req, function() {
+//				req.emit('data', new Buffer('param[subparam1][subparam2]=value'));
+//			});
+//			
+//			runs(function() {
+//				expect(router.dispatchAction.mostRecentCall.args[1].params).
+//						toEqual({ param: { subparam1: { subparam2: 'value' }}});
+//			});
+//		});
+		
+		function dispatchAndWait(req, emitFunc) {
+			router.dispatchPost('route', req, 'response');
+			emitFunc();
+			req.emit('end');
+			
+			waitsFor(function() {
+				return req.finished;
+			}, '#dispatchPost to finish', 100);
+		}
 	});
 
 	describe('#dispatchAction', function() {
@@ -292,4 +399,3 @@ describe('Dispatcher', function() {
 		});
 	});
 });
-

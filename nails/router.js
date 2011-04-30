@@ -6,6 +6,7 @@
 
 fs = require('fs');
 us = require('underscore');
+qs = require('querystring');
 
 this.routes = [];
 this.controllers = {};
@@ -85,6 +86,7 @@ function parseController(route_path, controller_action, options) {
 }
 
 this.dispatch = function(url, request, response) {
+
 	if (route = us.detect(this.routes, function(rte) {
 		match = rte.path.regex.exec(url);
 		return match && (rte.via == 'ANY' || (rte.via.indexOf(request.method) != -1));
@@ -93,7 +95,13 @@ this.dispatch = function(url, request, response) {
 		us.each(route.path.params, function(param, idx) {
 			request.params[param] = match[idx + 1];
 		});
-		this.dispatchAction(route, request, response);
+		
+		if (request.method == 'POST') {
+			this.dispatchPost(route, request, response);
+		}
+		else {
+			this.dispatchAction(route, request, response);
+		}
 	}
 	else {
 		fs.readFile('public' + url, function(error, data) {
@@ -106,6 +114,39 @@ this.dispatch = function(url, request, response) {
 		});
 	}
 };
+
+this.dispatchPost = function(route, request, response) {
+	var fullBody = '';
+	
+	request.on('data', function(data) {
+		fullBody += data.toString();
+	});
+	
+	request.on('end', function() {
+		this.finished = true;
+		request.params = parseParams(fullBody);
+		router.dispatchAction(route, request, response);
+	});
+};
+
+function parseParams(queryString) {
+	rawParams = qs.parse(queryString);
+	params = {};
+	us.each(rawParams, function(value, key) {
+        value = value.replace(/\r\n/g, '\n');
+		if (obj = key.match(/(.*)\[(.+)\]/)) {
+			if (us.isUndefined(params[obj[1]])) {
+				params[obj[1]] = {};
+			}
+			params[obj[1]][obj[2]] = value;
+		}
+		else {
+			params[key] = value;
+		}
+	});
+	
+	return params;
+}
 
 this.dispatchAction = function(route, request, response) {
 	controller = route.controller;
