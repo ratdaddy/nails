@@ -8,14 +8,25 @@ generators, MVC, RESTful services, etc.
 Installation
 --------
 
-Nails is currently only available from [GitHub](http://github.com/ratdaddy/nails) as a download. It doesn't yet
-use a fancy npm installation and the Nails code to run the application itself is mixed in to the
-same directory structure as the application.
+Nails is currently only available from [GitHub](http://github.com/ratdaddy/nails) as a download.
+It can be installed with [npm](https://github.com/isaacs/npm) by issuing the command:
 
-Installation is simply a matter of downloading the files and copying the directory structure to the
-directory you want your application to live in.
+	$ npm install -g https://github.com/ratdaddy/nails/tarball/master
 
-Usage
+Nails requires and works with [CoffeeScript](http://jashkenas.github.com/coffee-script/). You
+must install CoffeeScript:
+
+	$ npm install -g coffee-script
+
+
+Creating a Nails Application
+---------
+
+To create a skeleton Nails application in the directory <code>my_app</code> run:
+
+	$ nails new my_app
+
+Routes and Actions
 -----
 
 At the present time Nails doesn't do much more than route the path portion of the URL to an action
@@ -68,7 +79,7 @@ After the proper routes have been added and  controller/action pairs and view te
 you can run
 Nails from the application's top-level (home) directory:
 
-	$ script/nails
+	$ nails server
 
 You can now access your server by pointing a browser on the same computer to <code>http://localhost:3000</code>.
 

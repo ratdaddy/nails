@@ -9,7 +9,7 @@ this.home = function() {
 };
 
 this.about = function() {
-	fs.readFile('README.md', function(error, data) {
+	fs.readFile('../README.md', function(error, data) {
 		this.title = 'About This Site';
 		this.readme = md(data.toString());
 	});

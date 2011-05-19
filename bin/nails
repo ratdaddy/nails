@@ -1,0 +1,58 @@
+#!/usr/bin/env coffee
+
+# The nails program that creates applications, runs servers, etc.
+
+
+fs = require 'fs'
+path = require 'path'
+sys = require 'child_process'
+
+puts = console.log
+
+argv = process.argv[1...]
+command = argv[1]
+
+nailsHome = path.join __dirname, '..'
+
+require.paths.push path.join(nailsHome, 'lib')
+
+main = ->
+	switch command
+		when 's', 'server' then serverCommand()
+		when 'new' then newCommand()
+		when '--help', '-h' then outputHelp()
+		when '--version', '-v' then outputVersion()
+		when undefined then outputHelp()
+		else outputHelp()
+
+serverCommand = ->
+	puts '=> Nails application starting on http://0.0.0.0:3000'
+	puts '=> Ctrl-C to shutdown server'
+	require.paths.push './nails', '.';
+	require 'config/boot.js'
+	
+newCommand = ->
+	target = argv[2]
+	command = '/bin/cp -R ' + nailsHome + '/proto ' + target
+	sys.exec command, (error, stdout, stderror) ->
+		fs.mkdirSync path.join(target, 'app'), 0755
+		fs.mkdirSync path.join(target, 'app', 'controllers'), 0755
+		fs.mkdirSync path.join(target, 'app', 'views'), 0755
+		puts 'create  ' + target
+	
+outputHelp = ->
+	puts '''
+Usage: nails COMMAND [ARGS]
+		
+commands are:
+  server    Start the Nails server (short-cut alias: "s")
+  new       Create a new Nails application. "nails new my_app" creates a
+            new application called MyApp in "./my_app"
+	'''
+
+outputVersion = ->
+	fs.readFile nailsHome + '/package.json', (err, data) ->
+		package = JSON.parse data
+		puts 'Nails ' + package.version
+	
+main()

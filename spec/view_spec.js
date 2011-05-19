@@ -4,7 +4,7 @@
  * Copyright (c) 2011 Brian VanLoo
  */
 
-require.paths.push('./nails');
+require.paths.push('./lib');
 require('view');
 
 describe('#render', function() {

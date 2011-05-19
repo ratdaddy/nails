@@ -1,0 +1,10 @@
+{
+	"name" : "nailsjs",
+	"version" : "0.0.0",
+	"main" : "nailsjs",
+	"bin" : { "nails" : "bin/nails" },
+	"dependencies" : {
+		"underscore" : "",
+		"ejs" : ""
+	}
+}
