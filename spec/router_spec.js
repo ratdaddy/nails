@@ -326,6 +326,18 @@ describe('Dispatcher', function() {
 						toEqual({ param: { subparam1: 'value1', subparam2: 'value2' }});
 			});
 		});
+
+		it('adds to any parameters already set', function() {
+			req.params = { original: 'param' };
+			dispatchAndWait(req, function() {
+				req.emit('data', new Buffer('new=param'));
+			});
+
+			runs(function() {
+				expect(router.dispatchAction.mostRecentCall.args[1].params).
+						toEqual({ original: 'param', 'new': 'param' });
+			});
+		});
 		
 // TODO: make POST query parsing work for multi level keys
 //
