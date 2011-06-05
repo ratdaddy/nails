@@ -371,6 +371,7 @@ describe('Dispatcher', function() {
 			spyOn(action_method, 'action').andCallFake(function() { action_context = this; });
 			spyOn(view, 'render').andCallFake(function() { render_context = this; });
 			spyOn(view, 'wrapCallback').andCallFake(function() { wrapCallback_context = this; });
+			spyOn(view, 'redirect_to').andCallFake(function() { redirect_context = this; });
 
 			router.dispatchAction(router.routes[0], req, res);
 		});
@@ -378,9 +379,14 @@ describe('Dispatcher', function() {
 		it('calls the right action', function() {
 			expect(action_method.action).toHaveBeenCalled();
 		});
-		
+
+		it('sets the right context for the redirect_to function', function() {
+			action_context.redirect_to();
+
+			expect(redirect_context).toEqual(render_context);
+		});
+
 		it('sets the right context for the wrapCallback function', function() {
-			action_context.render();
 			action_context.wrapCallback();
 			
 			expect(wrapCallback_context).toEqual(render_context);

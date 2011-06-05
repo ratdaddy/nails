@@ -7,6 +7,30 @@
 require.paths.push('./lib');
 require('view');
 
+describe('#redirect_to', function() {
+	beforeEach(function() {
+		redirect_url = '/test';
+
+		context = { locals: { response: { writeHead: function() {}, end: function() {} }}};
+		spyOn(context.locals.response, 'writeHead');
+		spyOn(context.locals.response, 'end');
+
+		us.bind(view.redirect_to, { context: context })(redirect_url);
+	});
+
+	it('sends a header with a status code of 303 and the location of the redirect', function() {
+		expect(context.locals.response.writeHead).toHaveBeenCalledWith(303, { Location: redirect_url });
+	});
+
+	it('ends the response', function() {
+		expect(context.locals.response.end).toHaveBeenCalled();
+	});
+
+	it('sets the flag to prevent further rendering', function() {
+		expect(context.hasBeenRendered).toBeTruthy()
+	});
+});
+
 describe('#render', function() {
 	beforeEach(function() {
 		view.context = {};
