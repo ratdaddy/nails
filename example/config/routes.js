@@ -3,6 +3,7 @@
  */
 
 router.match('/home', 'pages#home');
+router.match('/alt/home', 'pages#althome');
 router.match('/about', 'pages#about');
 router.match('/banner/:message', 'pages#banner');
 

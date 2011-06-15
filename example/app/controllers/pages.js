@@ -8,6 +8,11 @@ this.home = function() {
 	this.title = 'Home Page';
 };
 
+this.althome = function() {
+	this.title = 'Alternate Home Page';
+	this.render('home');
+};
+
 this.about = function() {
 	fs.readFile('../README.md', function(error, data) {
 		this.title = 'About This Site';

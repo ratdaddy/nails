@@ -5,10 +5,11 @@
 Steps = require('cucumis').Steps
 childProcess = require 'child_process'
 net = require 'net'
+tobi = require 'tobi'
 
 srv = null
 
-this.start = (cb) ->
+@start = (cb) ->
 	unless srv
 		srv = childProcess.spawn '../bin/nails', ['server'], { cwd: 'example' }
 		waitForServer cb
@@ -28,4 +29,10 @@ waitForServer = (cb) ->
 		sock.end
 		cb()
 
-global.server = this
+@visit = (path, callback) ->
+	browser = tobi.createBrowser 3000, 'localhost'
+	browser.get path, (res, $) ->
+		res.should.have.status(200)
+		callback res, $
+		
+global.server = @

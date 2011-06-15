@@ -40,7 +40,7 @@ describe('#render', function() {
 	it('calls renderAction if not async', function() {
 		view.render();
 		
-		expect(view.renderAction).toHaveBeenCalledWith(view.context);
+		expect(view.renderAction).toHaveBeenCalledWith(view.context, undefined);
 	});
 	
 	it('does not call renderAction if async', function() {
@@ -50,11 +50,17 @@ describe('#render', function() {
 		expect(view.renderAction).not.toHaveBeenCalled();
 	});
 	
-	it('calls only calls the first time it is called', function() {
+	it('only calls the first time it is called', function() {
 		view.render();
 		view.render();
 
 		expect(view.renderAction.callCount).toEqual(1);
+	});
+
+	it('passes a specified action to renderAction', function() {
+		view.render('action');
+
+		expect(view.renderAction).toHaveBeenCalledWith(view.context, 'action');
 	});
 });
 
@@ -110,6 +116,12 @@ describe('#renderAction', function() {
 		view.renderAction(context);
 		
 		expect(context.renderFilename).toEqual('app/views/cont/action.ejs');
+	});
+
+	it('uses an alternate ejs action file if specified', function() {
+		view.renderAction(context, 'alt_action');
+
+		expect(context.renderFilename).toEqual('app/views/cont/alt_action.ejs');
 	});
 	
 	it('reads the ejs file', function() {
