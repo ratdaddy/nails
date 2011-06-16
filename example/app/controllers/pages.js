@@ -8,9 +8,23 @@ this.home = function() {
 	this.title = 'Home Page';
 };
 
-this.althome = function() {
+this.altHome = function() {
 	this.title = 'Alternate Home Page';
 	this.render('home');
+};
+
+this.asyncHome = function() {
+	setTimeout(this.wrapCallback(function() {
+		this.title = 'Asynchronous Home Page';
+		this.render();
+	}), 10);
+};
+
+this.altAsyncHome = function() {
+	setTimeout(this.wrapCallback(function() {
+		this.title = 'Asynchronous Alternate Home Page';
+		this.render('home');
+	}), 10);
 };
 
 this.about = function() {

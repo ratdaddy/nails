@@ -12,7 +12,17 @@ Feature: Render
 		When I go to the home page
 		Then I can see the home page
 
+	Scenario: Render a page asynchronously
+		Given a running server
+		When I go to the asynchronous home page
+		Then I can see the home page
+
 	Scenario: Render using the specified template file
 		Given a running server
 		When I go to the alternate home page
+		Then I can see the home page
+
+	Scenario: Render asynchronously using the specified template file
+		Given a running server
+		When I go to the asynchronous alternate home page
 		Then I can see the home page

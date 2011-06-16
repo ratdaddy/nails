@@ -37,17 +37,17 @@ describe('#render', function() {
 		spyOn(view, 'renderAction');
 	});
 	
-	it('calls renderAction if not async', function() {
+	it('calls renderAction with unspecified template as undefined if not provided', function() {
 		view.render();
 		
 		expect(view.renderAction).toHaveBeenCalledWith(view.context, undefined);
 	});
 	
-	it('does not call renderAction if async', function() {
+	it('calls renderAction even if async', function() {
 		view.wrapCallback(function() {});
 		view.render();
 		
-		expect(view.renderAction).not.toHaveBeenCalled();
+		expect(view.renderAction).toHaveBeenCalledWith(view.context, undefined);
 	});
 	
 	it('only calls the first time it is called', function() {
@@ -61,6 +61,33 @@ describe('#render', function() {
 		view.render('action');
 
 		expect(view.renderAction).toHaveBeenCalledWith(view.context, 'action');
+	});
+});
+
+describe('#_render', function() {
+	beforeEach(function() {
+		view.context = {};
+		spyOn(view, 'renderAction');
+	});
+
+	it('calls renderAction with the view context', function() {
+		view._render();
+
+		expect(view.renderAction).toHaveBeenCalledWith(view.context);
+	});
+
+	it('does not call renderAction if it was called while in an async function', function() {
+		view.wrapCallback(function() {});
+		view._render()
+
+		expect(view.renderAction).not.toHaveBeenCalled();
+	});
+
+	it('only calls renderAction the first time a render is called', function() {
+		view.render();
+		view._render();
+
+		expect(view.renderAction.callCount).toEqual(1);
 	});
 });
 
@@ -103,6 +130,12 @@ describe('#wrapCallback', function() {
 		callback();
 		
 		expect(view.renderAction).toHaveBeenCalledWith(view.context);
+	});
+
+	it('only calls view#renderAction once if render is called in action', function() {
+		view.wrapCallback(us.bind(function() { this.render(); }, view))();
+		
+		expect(view.renderAction.callCount).toEqual(1);
 	});
 });
 

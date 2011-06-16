@@ -369,15 +369,22 @@ describe('Dispatcher', function() {
 			router.controllers['cont'] = action_method;
 			
 			spyOn(action_method, 'action').andCallFake(function() { action_context = this; });
-			spyOn(view, 'render').andCallFake(function() { render_context = this; });
+			spyOn(view, 'render').andCallFake(function() { actionRender_context = this; });
 			spyOn(view, 'wrapCallback').andCallFake(function() { wrapCallback_context = this; });
 			spyOn(view, 'redirect_to').andCallFake(function() { redirect_context = this; });
+			spyOn(view, '_render').andCallFake(function() { render_context = this; });
 
 			router.dispatchAction(router.routes[0], req, res);
 		});
 
 		it('calls the right action', function() {
 			expect(action_method.action).toHaveBeenCalled();
+		});
+
+		it('sets the right context for the action render function', function() {
+			action_context.render();
+
+			expect(actionRender_context).toEqual(render_context);
 		});
 
 		it('sets the right context for the redirect_to function', function() {
@@ -392,8 +399,8 @@ describe('Dispatcher', function() {
 			expect(wrapCallback_context).toEqual(render_context);
 		});
 		
-		it('calls the render function', function() {
-			expect(view.render).toHaveBeenCalled();
+		it('calls the _render function', function() {
+			expect(view._render).toHaveBeenCalled();
 		});
 		
 		it('sets controller in the render context', function() {
